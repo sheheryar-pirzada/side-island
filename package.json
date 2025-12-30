@@ -1,0 +1,67 @@
+{
+  "name": "@peersahab/side-island",
+  "version": "0.1.0",
+  "description": "A Skia-powered quick access island overlay for React Native with built-in virtualized content.",
+  "license": "MIT",
+  "keywords": [
+    "react-native",
+    "skia",
+    "ui",
+    "overlay",
+    "island",
+    "quick-access"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "REPLACE_ME"
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "react-native": "dist/index.mjs",
+  "source": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "peerDependencies": {
+    "@shopify/react-native-skia": ">=0.1.0",
+    "react": ">=18",
+    "react-native": ">=0.72",
+    "react-native-reanimated": ">=3"
+  },
+  "peerDependenciesMeta": {
+    "@shopify/react-native-skia": {
+      "optional": true
+    },
+    "react-native-reanimated": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.18",
+    "@types/react-native": "^0.72.0",
+    "@shopify/react-native-skia": "^2.4.14",
+    "rimraf": "^6.0.1",
+    "react-native": "^0.83.1",
+    "react-native-reanimated": "^3.17.5",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2"
+  },
+  "scripts": {
+    "clean": "rimraf dist",
+    "build": "tsup",
+    "prepublishOnly": "npm run build",
+    "pack:inspect": "npm pack --dry-run"
+  }
+}
+
+
