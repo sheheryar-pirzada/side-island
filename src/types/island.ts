@@ -149,5 +149,3 @@ export type SideIslandProps<ItemT> = {
    */
   focusedItemDetailGap?: number;
 };
-
-

@@ -24,5 +24,3 @@ export function useSideIsland(): SideIslandController {
     [close, ctx.config, ctx.expanded, ctx.setExpanded, open, toggle]
   );
 }
-
-

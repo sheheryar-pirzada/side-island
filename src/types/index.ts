@@ -6,5 +6,3 @@ export type {
   SideIslandProviderProps,
   SideIslandProps,
 } from "./island";
-
-

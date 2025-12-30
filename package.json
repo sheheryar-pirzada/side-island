@@ -1,7 +1,7 @@
 {
   "name": "@peersahab/side-island",
   "version": "0.1.0",
-  "description": "A Skia-powered quick access island overlay for React Native with built-in virtualized content.",
+  "description": "A Skia-powered side island overlay for React Native with built-in virtualized content.",
   "license": "MIT",
   "keywords": [
     "react-native",
@@ -9,11 +9,16 @@
     "ui",
     "overlay",
     "island",
-    "quick-access"
+    "side-island"
   ],
   "repository": {
     "type": "git",
-    "url": "REPLACE_ME"
+    "url": "https://github.com/peersahab/side-island.git"
+  },
+  "author": "peersahab",
+  "homepage": "https://github.com/peersahab/side-island#readme",
+  "bugs": {
+    "url": "https://github.com/peersahab/side-island/issues"
   },
   "main": "dist/index.js",
   "module": "dist/index.mjs",
