@@ -44,10 +44,6 @@ export type SideIslandConfig = {
   handleWidth?: number;
   topOffset?: number;
   /**
-   * Enables debug logging (dev-only).
-   */
-  debug?: boolean;
-  /**
    * Optional haptics adapter. If provided, it will be used to trigger haptic feedback
    * on island open/close without adding a hard dependency to any haptics library.
    */
@@ -101,10 +97,6 @@ export type SideIslandProps<ItemT> = {
   backgroundColor?: string;
   handleWidth?: number;
   topOffset?: number;
-  /**
-   * Enables debug logging (dev-only).
-   */
-  debug?: boolean;
   /**
    * Optional haptics adapter. If provided, it will be used to trigger haptic feedback
    * on island open/close without adding a hard dependency to any haptics library.

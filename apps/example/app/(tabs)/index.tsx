@@ -211,7 +211,6 @@ export default function TabOneScreen() {
           onClose: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light),
           onFocusChange: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid),
         }}
-        debug={false}
         height={320}
         topOffset={-180}
         handleWidth={0}

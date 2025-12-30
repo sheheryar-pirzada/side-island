@@ -129,7 +129,6 @@ export function SideIsland<ItemT>({
   backgroundColor,
   handleWidth,
   topOffset,
-  debug,
   haptics,
 
   style,
@@ -157,15 +156,7 @@ export function SideIsland<ItemT>({
   const resolvedWaveY2 = waveY2 ?? ctx?.config.waveY2 ?? 0.9;
   const resolvedHandleWidth = handleWidth ?? ctx?.config.handleWidth ?? 16;
   const resolvedTopOffset = topOffset ?? ctx?.config.topOffset ?? 0;
-  const resolvedDebug = debug ?? ctx?.config.debug ?? false;
   const resolvedHaptics = haptics ?? ctx?.config.haptics;
-
-  const log = (...args: any[]) => {
-    if (typeof __DEV__ !== "undefined" && __DEV__ && resolvedDebug) {
-      // eslint-disable-next-line no-console
-      console.log("[side-island]", ...args);
-    }
-  };
 
   // Default island background should be pure black (app can override via prop/provider).
   const defaultBg = "#000000";
@@ -187,24 +178,21 @@ export function SideIsland<ItemT>({
     if (!resolvedHaptics) return;
 
     if (effectiveExpanded) {
-      log("haptics:open");
       try {
         void resolvedHaptics.onOpen?.();
       } catch (e) {
-        log("haptics:error", e);
+        // Silently handle haptics errors
       }
     } else {
-      log("haptics:close");
       try {
         void resolvedHaptics.onClose?.();
       } catch (e) {
-        log("haptics:error", e);
+        // Silently handle haptics errors
       }
     }
-  }, [effectiveExpanded, resolvedHaptics]); // log intentionally not included
+  }, [effectiveExpanded, resolvedHaptics]);
 
   const setExpanded = (next: boolean) => {
-    log("setExpanded", { next, isControlled, isUsingProvider });
     if (isControlled) {
       onToggleExpanded?.(next);
       return;
@@ -230,7 +218,6 @@ export function SideIsland<ItemT>({
   const backdropOpacity = useSharedValue(effectiveExpanded ? 1 : 0);
 
   useEffect(() => {
-    log("animate", { effectiveExpanded, collapsedTranslateX });
     translateXAnim.value = withTiming(effectiveExpanded ? 0 : collapsedTranslateX, {
       duration: 300,
       easing: Easing.out(Easing.ease),
@@ -239,7 +226,7 @@ export function SideIsland<ItemT>({
       duration: 300,
       easing: Easing.out(Easing.ease),
     });
-  }, [collapsedTranslateX, effectiveExpanded, translateXAnim, backdropOpacity]); // log is stable enough via resolvedDebug
+  }, [collapsedTranslateX, effectiveExpanded, translateXAnim, backdropOpacity]);
 
   const path = useMemo(() => {
     return buildWaveIslandPath(resolvedWidth, resolvedHeight, resolvedPosition, resolvedWaveAmplitude, resolvedWaveY1, resolvedWaveY2);
@@ -313,16 +300,14 @@ export function SideIsland<ItemT>({
 
     const focusInfo = { item: items[clampedIndex] as ItemT, index: clampedIndex };
 
-    log("focus:change", { index: clampedIndex, key: focusedKey });
     setFocusedItemInfo(focusInfo);
     onFocusedItemChange?.(focusInfo);
 
     if (effectiveExpanded) {
-      log("haptics:focus");
       try {
         void resolvedHaptics?.onFocusChange?.({ index: clampedIndex });
       } catch (e) {
-        log("haptics:error", e);
+        // Silently handle haptics errors
       }
     }
   };
@@ -375,7 +360,6 @@ export function SideIsland<ItemT>({
   const scrollToIndexCentered = (index: number, animated: boolean) => {
     const maxIndex = Math.max(0, items.length - 1);
     const clamped = clamp(index, 0, maxIndex);
-    log("scrollToIndexCentered", { index: clamped, animated });
     listRef.current?.scrollToIndex({ index: clamped, animated, viewPosition: 0.5 });
   };
 
@@ -417,26 +401,22 @@ export function SideIsland<ItemT>({
           resolvedPosition === "right"
             ? dx > 10 && Math.abs(dx) > Math.abs(dy)
             : dx < -10 && Math.abs(dx) > Math.abs(dy);
-        if (should) log("swipe:claim", { dx, dy });
         return should;
       },
       onPanResponderRelease: (_evt, gestureState) => {
         if (!effectiveExpanded) return;
         const dx = gestureState.dx;
         const vx = gestureState.vx;
-        log("swipe:release", { dx, vx });
         const shouldClose = resolvedPosition === "right" ? dx > 60 && vx > 0 : dx < -60 && vx < 0;
         if (shouldClose) {
-          log("swipe:close", { dx, vx });
           setExpanded(false);
         }
       },
       onPanResponderTerminate: () => {
-        log("swipe:terminate");
         // no-op
       },
     });
-  }, [effectiveExpanded, setExpanded, log, resolvedPosition]);
+  }, [effectiveExpanded, setExpanded, resolvedPosition]);
 
   const panHandlers = backdropComponent ? undefined : panResponder.panHandlers;
 
@@ -538,7 +518,6 @@ export function SideIsland<ItemT>({
         {resolvedHandleWidth > 0 && (
           <Pressable
             onPress={() => {
-              log("handle:press");
               onPress?.();
               toggleExpanded();
             }}

@@ -244,7 +244,6 @@ The main component that renders the side island overlay.
 | `backdropComponent` | `React.ReactElement` | - | Component to render as backdrop (fades in when expanded) |
 | `renderFocusedItemDetail` | `(info: { item: ItemT; index: number; expanded: boolean; setExpanded: (next: boolean) => void }) => React.ReactElement \| null` | - | Component to render details of the focused item (displayed opposite the island) |
 | `focusedItemDetailGap` | `number` | `16` | Horizontal gap between focused item detail and island |
-| `debug` | `boolean` | `false` | Enable debug logging (dev-only) |
 
 ### `SideIslandProvider`
 
@@ -292,7 +291,6 @@ Configuration object for default island settings (used in Provider or individual
 | `backgroundColor` | `string` | `"#000000"` | Default background color |
 | `handleWidth` | `number` | `16` | Default handle width |
 | `topOffset` | `number` | `0` | Default top offset |
-| `debug` | `boolean` | `false` | Default debug mode |
 | `haptics` | `SideIslandHaptics` | - | Default haptics adapter |
 
 ### `SideIslandHaptics`
