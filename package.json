@@ -13,12 +13,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/peersahab/side-island.git"
+    "url": "https://github.com/sheheryar-pirzada/side-island.git"
   },
-  "author": "peersahab",
-  "homepage": "https://github.com/peersahab/side-island#readme",
+  "author": "sheheryar-pirzada",
+  "homepage": "https://github.com/sheheryar-pirzada/side-island#readme",
   "bugs": {
-    "url": "https://github.com/peersahab/side-island/issues"
+    "url": "https://github.com/sheheryar-pirzada/side-island/issues"
   },
   "main": "dist/index.js",
   "module": "dist/index.mjs",

@@ -22,11 +22,11 @@ The `SideIsland` component can be positioned on either side of the screen and di
 
 ### Right Position
 
-![Right Island](screenshots/right-island.png)
+![Right Island](screenshots/right.png)
 
 ### Left Position
 
-![Left Island](screenshots/left-island.png)
+![Left Island](screenshots/left.png)
 
 ## Quick Start
 
