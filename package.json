@@ -9,7 +9,12 @@
     "ui",
     "overlay",
     "island",
-    "side-island"
+    "side-island",
+    "react-native-side-island",
+    "react-native-side-island-overlay",
+    "expo",
+    "expo-side-island",
+    "dynamic-island"
   ],
   "repository": {
     "type": "git",

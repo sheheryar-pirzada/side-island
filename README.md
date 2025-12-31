@@ -30,19 +30,25 @@ The `SideIsland` component can be positioned on either side of the screen and di
 
 ## Quick Start
 
+> **Note:** The island opens and closes programmatically only. There is no visible handle or user interaction to toggle it. Control it via the `expanded` prop, `onToggleExpanded` callback, or the `useSideIsland` hook.
+
 ### Basic Usage
 
 ```tsx
-import React from "react";
-import { View } from "react-native";
+import React, { useState } from "react";
+import { View, Button } from "react-native";
 import { SideIsland } from "@peersahab/side-island";
 
 export function Example() {
+  const [expanded, setExpanded] = useState(false);
   const items = Array.from({ length: 40 }).map((_, i) => ({ id: String(i) }));
 
   return (
     <View style={{ flex: 1 }}>
+      <Button title="Toggle Island" onPress={() => setExpanded(!expanded)} />
       <SideIsland
+        expanded={expanded}
+        onToggleExpanded={setExpanded}
         items={items}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
@@ -220,7 +226,6 @@ The main component that renders the side island overlay.
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `backgroundColor` | `string` | `"#000000"` | Background color of the island |
-| `handleWidth` | `number` | `16` | Width of the touchable handle area (0 to disable) |
 
 ##### State Management
 
@@ -234,7 +239,6 @@ The main component that renders the side island overlay.
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `onPress` | `() => void` | - | Fired when the handle area is pressed (island still toggles automatically) |
 | `haptics` | `SideIslandHaptics` | - | Haptics adapter for feedback (see Haptics section below) |
 
 ##### Advanced Features
@@ -289,7 +293,6 @@ Configuration object for default island settings (used in Provider or individual
 | `waveY1` | `number` | `0.1` | Default top wave position |
 | `waveY2` | `number` | `0.9` | Default bottom wave position |
 | `backgroundColor` | `string` | `"#000000"` | Default background color |
-| `handleWidth` | `number` | `16` | Default handle width |
 | `topOffset` | `number` | `0` | Default top offset |
 | `haptics` | `SideIslandHaptics` | - | Default haptics adapter |
 

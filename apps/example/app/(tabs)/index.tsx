@@ -213,7 +213,6 @@ export default function TabOneScreen() {
         }}
         height={320}
         topOffset={-180}
-        handleWidth={0}
         focusedItemDetailGap={2}
         backdropComponent={
           <BlurView

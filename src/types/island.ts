@@ -41,7 +41,6 @@ export type SideIslandConfig = {
   waveY1?: number;
   waveY2?: number;
   backgroundColor?: string;
-  handleWidth?: number;
   topOffset?: number;
   /**
    * Optional haptics adapter. If provided, it will be used to trigger haptic feedback
@@ -95,7 +94,6 @@ export type SideIslandProps<ItemT> = {
   waveY1?: number;
   waveY2?: number;
   backgroundColor?: string;
-  handleWidth?: number;
   topOffset?: number;
   /**
    * Optional haptics adapter. If provided, it will be used to trigger haptic feedback
@@ -108,12 +106,6 @@ export type SideIslandProps<ItemT> = {
   expanded?: boolean;
   onToggleExpanded?: (next: boolean) => void;
   defaultExpanded?: boolean;
-
-  /**
-   * Fired when the handle area is pressed.
-   * The island will still toggle expansion via controlled/provider/internal state.
-   */
-  onPress?: () => void;
 
   /**
    * Optional backdrop component that will fade into view when the island expands.

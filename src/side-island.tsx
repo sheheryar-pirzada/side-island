@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { FlatList, PanResponder, Pressable, StyleSheet, useColorScheme, useWindowDimensions, View } from "react-native";
+import { FlatList, PanResponder, StyleSheet, useColorScheme, useWindowDimensions, View } from "react-native";
 import Animated, { Easing, Extrapolation, interpolate, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { Canvas, Group, Path as SkPathNode, Skia } from "@shopify/react-native-skia";
 
@@ -127,7 +127,6 @@ export function SideIsland<ItemT>({
   waveY1,
   waveY2,
   backgroundColor,
-  handleWidth,
   topOffset,
   haptics,
 
@@ -136,8 +135,6 @@ export function SideIsland<ItemT>({
   expanded,
   onToggleExpanded,
   defaultExpanded = false,
-
-  onPress,
 
   backdropComponent,
   renderFocusedItemDetail,
@@ -154,7 +151,6 @@ export function SideIsland<ItemT>({
   const resolvedWaveAmplitude = waveAmplitude ?? ctx?.config.waveAmplitude ?? 18;
   const resolvedWaveY1 = waveY1 ?? ctx?.config.waveY1 ?? 0.1;
   const resolvedWaveY2 = waveY2 ?? ctx?.config.waveY2 ?? 0.9;
-  const resolvedHandleWidth = handleWidth ?? ctx?.config.handleWidth ?? 16;
   const resolvedTopOffset = topOffset ?? ctx?.config.topOffset ?? 0;
   const resolvedHaptics = haptics ?? ctx?.config.haptics;
 
@@ -209,9 +205,8 @@ export function SideIsland<ItemT>({
   // Position island vertically centered and pinned to a screen edge
   const topPosition = Math.round((screenHeight - resolvedHeight) / 2) + resolvedTopOffset;
 
-  // When collapsed, keep a small handle visible.
-  const collapsedMagnitude = Math.max(0, resolvedWidth - resolvedHandleWidth);
-  const collapsedTranslateX = resolvedPosition === "right" ? collapsedMagnitude : -collapsedMagnitude;
+  // When collapsed, completely hide the island off-screen.
+  const collapsedTranslateX = resolvedPosition === "right" ? resolvedWidth : -resolvedWidth;
 
   // Animated translateX value - controls horizontal position
   const translateXAnim = useSharedValue(collapsedTranslateX);
@@ -514,21 +509,6 @@ export function SideIsland<ItemT>({
             ]}
           />
         </View>
-
-        {resolvedHandleWidth > 0 && (
-          <Pressable
-            onPress={() => {
-              onPress?.();
-              toggleExpanded();
-            }}
-            style={[
-              styles.handle,
-              { width: resolvedHandleWidth },
-              resolvedPosition === "right" ? styles.handleRight : styles.handleLeft,
-            ]}
-            hitSlop={10}
-          />
-        )}
       </View>
     </Animated.View>
   );
@@ -595,18 +575,6 @@ const styles = StyleSheet.create({
   container: {
     position: "absolute",
     zIndex: 9999,
-  },
-  handle: {
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    backgroundColor: "transparent",
-  },
-  handleRight: {
-    right: 0,
-  },
-  handleLeft: {
-    left: 0,
   },
   focusedItemDetail: {
     position: "absolute",

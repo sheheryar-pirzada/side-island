@@ -54,7 +54,6 @@ export function ColorPickerIsland({
       onToggleExpanded={onToggleExpanded}
       focusedItemDetailGap={10}
       height={350}
-      handleWidth={0}
       topOffset={-90}
       backgroundColor="#000000"
       haptics={{
