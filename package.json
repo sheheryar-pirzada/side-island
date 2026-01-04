@@ -1,6 +1,6 @@
 {
   "name": "@peersahab/side-island",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "A Skia-powered side island overlay for React Native with built-in virtualized content.",
   "license": "MIT",
   "keywords": [
