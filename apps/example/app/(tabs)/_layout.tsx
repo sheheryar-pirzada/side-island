@@ -8,9 +8,13 @@ export default function TabLayout() {
         <Label>Island Demo</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="two">
-        <Icon sf="key.shield.fill" />
-        <Label>Private</Label>
+        <Icon sf="heart.fill" />
+          <Label>BMI Calculator</Label>
+        </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="three">
+        <Icon sf="rectangle.grid.3x1.fill" />
+        <Label>Kanban Board</Label>
       </NativeTabs.Trigger>
-    </NativeTabs>
+      </NativeTabs>
   );
 }
