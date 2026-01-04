@@ -14,7 +14,9 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.peersahab.example",
+      "appleTeamId": "9Y5Y87RDPF"
     },
     "android": {
       "adaptiveIcon": {
@@ -22,7 +24,8 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.peersahab.example"
     },
     "web": {
       "bundler": "metro",

@@ -6,4 +6,9 @@ export type { SideIslandConfig, SideIslandController, SideIslandProviderProps } 
 
 export { useSideIsland } from "./hooks/use-side-island";
 
+export { SideIslandDndProvider, useSideIslandDnd } from "./dnd/side-island-dnd-provider";
+export { DroppableContainer } from "./dnd/droppable-container";
+export type { DroppableContainerProps } from "./dnd/droppable-container";
+export type { DragPayload, DropZoneBounds } from "./dnd/types";
+
 

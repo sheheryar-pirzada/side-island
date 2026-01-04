@@ -180,6 +180,140 @@ export function IslandOverlay() {
 }
 ```
 
+## Drag and Drop
+
+The library supports drag-and-drop functionality, allowing users to drag items from the island and drop them into custom drop zones anywhere in your app.
+
+### Setup
+
+First, wrap your app with `SideIslandDndProvider`:
+
+```tsx
+import React from "react";
+import { SideIslandDndProvider } from "@peersahab/side-island";
+
+export function AppRoot() {
+  return (
+    <SideIslandDndProvider>
+      {/* your app */}
+    </SideIslandDndProvider>
+  );
+}
+```
+
+### Enable Drag on Island
+
+Enable drag-and-drop on your island:
+
+```tsx
+import React from "react";
+import { SideIsland } from "@peersahab/side-island";
+
+export function MyIsland() {
+  return (
+    <SideIsland
+      items={items}
+      renderItem={({ item }) => <YourItem item={item} />}
+      enableDragAndDrop={true}
+      islandId="my-island"
+      onDragStart={({ item, index, islandId }) => {
+        console.log("Drag started:", item);
+      }}
+      onDragEnd={({ item, index, islandId, dropResult }) => {
+        if (dropResult) {
+          console.log("Dropped in:", dropResult.dropZoneId);
+        } else {
+          console.log("Drag cancelled");
+        }
+      }}
+    />
+  );
+}
+```
+
+### Create Drop Zones
+
+Use `DroppableContainer` to create drop zones anywhere in your app:
+
+```tsx
+import React, { useState } from "react";
+import { View, Text, StyleSheet } from "react-native";
+import { DroppableContainer } from "@peersahab/side-island";
+
+export function MyScreen() {
+  const [droppedItems, setDroppedItems] = useState([]);
+
+  return (
+    <View style={styles.container}>
+      <DroppableContainer
+        dropZoneId="my-drop-zone"
+        onDrop={({ dropZoneId, payload }) => {
+          console.log("Item dropped:", payload.item);
+          setDroppedItems([...droppedItems, payload.item]);
+        }}
+        style={styles.dropZone}
+      >
+        {({ isOver, isDragging }) => (
+          <View
+            style={[
+              styles.dropZoneContent,
+              isOver && styles.dropZoneActive,
+            ]}
+          >
+            <Text>
+              {isOver ? "Drop here!" : "Drop zone"}
+            </Text>
+          </View>
+        )}
+      </DroppableContainer>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 20,
+  },
+  dropZone: {
+    flex: 1,
+    borderWidth: 2,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    padding: 20,
+  },
+  dropZoneContent: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  dropZoneActive: {
+    backgroundColor: "#e3f2fd",
+    borderColor: "#2196f3",
+  },
+});
+```
+
+### Custom Drag Payload
+
+Customize the data sent when dragging:
+
+```tsx
+<SideIsland
+  enableDragAndDrop={true}
+  getDragPayload={({ item, index }) => ({
+    customData: item.someProperty,
+    timestamp: Date.now(),
+  })}
+  renderDragPreview={({ item, index }) => (
+    <View style={{ opacity: 0.8 }}>
+      <YourCustomPreview item={item} />
+    </View>
+  )}
+  // ... other props
+/>
+```
+
 ## API Reference
 
 ### `SideIsland<ItemT>`
@@ -201,6 +335,7 @@ The main component that renders the side island overlay.
 |------|------|---------|-------------|
 | `keyExtractor` | `(item: ItemT, index: number) => string` | `(_, index) => String(index)` | Function to extract unique keys for items |
 | `listProps` | `Omit<FlatListProps<ItemT>, "data" \| "renderItem" \| "keyExtractor">` | - | Additional props to pass to the internal FlatList |
+| `renderItemWrapper` | `(info: { index: number; scrollY: SharedValue<number>; itemHeight: SharedValue<number>; viewportHeight: number; separatorHeight: number; children: React.ReactNode }) => React.ReactElement` | - | Optional wrapper for each item to implement custom scroll-based animations (defaults to built-in scaling) |
 | `onFocusedItemChange` | `(info: { item: ItemT; index: number } \| null) => void` | - | Called when the focused item changes (item closest to center) |
 
 ##### Position & Layout
@@ -248,6 +383,60 @@ The main component that renders the side island overlay.
 | `backdropComponent` | `React.ReactElement` | - | Component to render as backdrop (fades in when expanded) |
 | `renderFocusedItemDetail` | `(info: { item: ItemT; index: number; expanded: boolean; setExpanded: (next: boolean) => void }) => React.ReactElement \| null` | - | Component to render details of the focused item (displayed opposite the island) |
 | `focusedItemDetailGap` | `number` | `16` | Horizontal gap between focused item detail and island |
+
+##### Drag and Drop
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `enableDragAndDrop` | `boolean` | `false` | Enable drag-and-drop functionality for island items |
+| `islandId` | `string` | `"default"` | Unique identifier for this island (used in drag callbacks) |
+| `getDragPayload` | `(info: { item: ItemT; index: number }) => unknown` | `(info) => ({ item, index })` | Custom function to extract drag payload from an item |
+| `renderDragPreview` | `(info: { item: ItemT; index: number }) => React.ReactElement \| null` | - | Custom render function for the drag preview that follows the finger |
+| `onDragStart` | `(info: { item: ItemT; index: number; islandId: string }) => void` | - | Called when a drag operation starts |
+| `onDragEnd` | `(info: { item: ItemT; index: number; islandId: string; dropResult: null \| { dropZoneId: string } }) => void` | - | Called when a drag operation ends. `dropResult` is null if item was not dropped in a valid drop zone |
+
+### `SideIslandDndProvider`
+
+Provider component for managing drag-and-drop state globally. Must wrap your app when using drag-and-drop.
+
+#### Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `children` | `React.ReactNode` | - | Child components |
+| `renderDragPreview` | `(payload: DragPayload) => React.ReactElement \| null` | - | Optional global drag preview renderer (overrides per-island previews) |
+
+### `DroppableContainer`
+
+Component that creates a drop zone where island items can be dropped.
+
+#### Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `dropZoneId` | `string` | - | Unique identifier for this drop zone (required) |
+| `onDrop` | `(info: { dropZoneId: string; payload: DragPayload }) => void` | - | Called when an item is dropped in this zone (required) |
+| `accepts` | `(payload: DragPayload) => boolean` | - | Optional function to filter which items can be dropped (returns true to accept) |
+| `onDragEnter` | `(payload: DragPayload) => void` | - | Called when a dragged item enters this drop zone |
+| `onDragLeave` | `(payload: DragPayload) => void` | - | Called when a dragged item leaves this drop zone |
+| `children` | `React.ReactNode \| ((state: { isOver: boolean; isDragging: boolean }) => React.ReactNode)` | - | Content to render. Can be a function that receives drag state |
+| `style` | `ViewStyle` | - | Additional styles for the container |
+
+### `useSideIslandDnd()`
+
+Hook to access the drag-and-drop context. Returns `null` if provider is not present.
+
+#### Returns
+
+```typescript
+{
+  isDraggingSV: SharedValue<boolean>;
+  dragXSV: SharedValue<number>;
+  dragYSV: SharedValue<number>;
+  activeDropZoneIdSV: SharedValue<string | null>;
+  // ... internal methods
+} | null
+```
 
 ### `SideIslandProvider`
 

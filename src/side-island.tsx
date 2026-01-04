@@ -1,10 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { FlatList, PanResponder, StyleSheet, useColorScheme, useWindowDimensions, View } from "react-native";
-import Animated, { Easing, Extrapolation, interpolate, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import Animated, { Easing, Extrapolation, interpolate, useAnimatedStyle, useSharedValue, withDelay, withTiming } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 import { Canvas, Group, Path as SkPathNode, Skia } from "@shopify/react-native-skia";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 
 import { SideIslandContext } from "./provider/side-island-provider";
 import type { SideIslandPosition, SideIslandProps } from "./types/island";
+import { useSideIslandDnd } from "./dnd/side-island-dnd-provider";
 
 function clamp(n: number, min: number, max: number) {
   "worklet";
@@ -113,11 +116,153 @@ function ScaledItem({
   );
 }
 
+function DraggableItem<ItemT>({
+  item,
+  index,
+  islandId,
+  itemKey,
+  getDragPayload,
+  renderDragPreview,
+  renderItem,
+  onDragStart,
+  onDragEnd,
+  setScrollEnabled,
+  dndContext,
+  islandPosition,
+  children,
+}: {
+  item: ItemT;
+  index: number;
+  islandId: string;
+  itemKey: string;
+  getDragPayload?: (info: { item: ItemT; index: number }) => unknown;
+  renderDragPreview?: (info: { item: ItemT; index: number }) => React.ReactElement | null;
+  renderItem: (info: { item: ItemT; index: number }) => React.ReactElement | null;
+  onDragStart?: (info: { item: ItemT; index: number; islandId: string }) => void;
+  onDragEnd?: (info: {
+    item: ItemT;
+    index: number;
+    islandId: string;
+    dropResult: null | { dropZoneId: string };
+  }) => void;
+  setScrollEnabled: (enabled: boolean) => void;
+  dndContext: ReturnType<typeof useSideIslandDnd> | null;
+  islandPosition?: { x: number; y: number };
+  children: React.ReactNode;
+}) {
+  const payload = useMemo(() => {
+    const basePayload = getDragPayload ? getDragPayload({ item, index }) : { item, index };
+    return {
+      islandId,
+      item,
+      index,
+      data: basePayload,
+      key: itemKey,
+      islandPosition,
+    };
+  }, [item, index, islandId, itemKey, getDragPayload, islandPosition]);
+  
+  const previewElement = useMemo(() => {
+    // Default to renderItem if renderDragPreview is not provided
+    return renderDragPreview 
+      ? renderDragPreview({ item, index }) 
+      : renderItem({ item, index });
+  }, [item, index, renderDragPreview, renderItem]);
+
+  if (!dndContext) {
+    return <>{children}</>;
+  }
+
+  // We render the real "dragging visual" in the full-screen DnD overlay.
+  // The original cell should disappear while dragging to avoid looking clipped/bound to the island.
+  // We use numeric shared values so we can time/delay restoration purely on the UI thread.
+  const localOpacitySV = useSharedValue(1);
+  const localSnappingBackSV = useSharedValue(0); // 0 | 1
+  const localDragStyle = useAnimatedStyle(() => {
+    return {
+      opacity: localOpacitySV.value,
+    };
+  });
+
+  // Pre-register the preview element so it's available when drag starts
+  useEffect(() => {
+    dndContext.setPreviewElement(payload.key, previewElement);
+    return () => {
+      // Clean up when component unmounts
+      dndContext.setPreviewElement(payload.key, null);
+    };
+  }, [dndContext, payload.key, previewElement]);
+
+  const panGesture = Gesture.Pan()
+    .activateAfterLongPress(400) // Require 400ms hold before drag activates (prevents accidental drags)
+    .onStart(() => {
+      "worklet";
+      localSnappingBackSV.value = 0;
+      localOpacitySV.value = 0;
+      // Make overlay start moving immediately (UI thread).
+      // SharedValues are safe to write inside worklets.
+      dndContext.isDraggingSV.value = true;
+      scheduleOnRN(setScrollEnabled, false);
+      scheduleOnRN(dndContext.startDrag, payload);
+      if (onDragStart) {
+        scheduleOnRN(onDragStart, { item, index, islandId });
+      }
+    })
+    .onUpdate((event: { absoluteX: number; absoluteY: number }) => {
+      "worklet";
+      // Update overlay position smoothly (UI thread)
+      dndContext.dragXSV.value = event.absoluteX;
+      dndContext.dragYSV.value = event.absoluteY;
+
+      // Update global position for drop-zone hit-testing (JS thread)
+      scheduleOnRN(dndContext.updateDragPosition, event.absoluteX, event.absoluteY);
+    })
+    .onEnd(() => {
+      "worklet";
+      const activeDropZoneId = dndContext.activeDropZoneIdSV.value;
+      const dropResult = activeDropZoneId ? { dropZoneId: activeDropZoneId } : null;
+      const shouldSnapBack = !activeDropZoneId && islandPosition != null;
+      
+      if (shouldSnapBack) {
+        localSnappingBackSV.value = 1;
+        // Snap-back preview is 300ms (provider). Restore the original cell after that,
+        // without relying on a JS callback (more robust).
+        localOpacitySV.value = withDelay(300, withTiming(1, { duration: 0 }));
+        localSnappingBackSV.value = withDelay(300, withTiming(0, { duration: 0 }));
+        scheduleOnRN(dndContext.endDrag, true);
+      } else {
+        scheduleOnRN(dndContext.endDrag, false);
+        localOpacitySV.value = 1;
+        dndContext.isDraggingSV.value = false;
+      }
+      scheduleOnRN(setScrollEnabled, true);
+      if (onDragEnd) {
+        scheduleOnRN(onDragEnd, { item, index, islandId, dropResult });
+      }
+    })
+    .onFinalize(() => {
+      "worklet";
+      // If we're snapping back, keep the cell hidden until snap-back completes.
+      if (localSnappingBackSV.value !== 1) {
+        localOpacitySV.value = 1;
+        dndContext.isDraggingSV.value = false;
+      }
+      scheduleOnRN(setScrollEnabled, true);
+    });
+
+  return (
+    <GestureDetector gesture={panGesture}>
+      <Animated.View style={localDragStyle}>{children}</Animated.View>
+    </GestureDetector>
+  );
+}
+
 export function SideIsland<ItemT>({
   items,
   renderItem,
   keyExtractor,
   listProps,
+  renderItemWrapper,
   onFocusedItemChange,
 
   position,
@@ -139,10 +284,29 @@ export function SideIsland<ItemT>({
   backdropComponent,
   renderFocusedItemDetail,
   focusedItemDetailGap = 16,
+
+  enableDragAndDrop = false,
+  islandId = "default",
+  getDragPayload,
+  renderDragPreview,
+  onDragStart,
+  onDragEnd,
 }: SideIslandProps<ItemT>) {
   const { height: screenHeight, width: screenWidth } = useWindowDimensions();
   const colorScheme = useColorScheme();
   const ctx = React.useContext(SideIslandContext);
+  
+  const [scrollEnabled, setScrollEnabled] = useState(listProps?.scrollEnabled ?? true);
+  
+  // Get DnD context - returns null if provider not present
+  const dndContext = useSideIslandDnd();
+  
+  // Warn if drag is enabled but provider is missing
+  useEffect(() => {
+    if (enableDragAndDrop && !dndContext) {
+      console.warn("SideIsland: enableDragAndDrop is true but SideIslandDndProvider is not found. Drag-and-drop will be disabled.");
+    }
+  }, [enableDragAndDrop, dndContext]);
 
   const resolvedPosition: SideIslandPosition = position ?? ctx?.config.position ?? "right";
 
@@ -286,7 +450,11 @@ export function SideIsland<ItemT>({
     if (items.length === 0) return;
     const maxIndex = Math.max(0, items.length - 1);
     const clampedIndex = clamp(index, 0, maxIndex);
-    const focusedKey = String(clampedIndex);
+    // IMPORTANT:
+    // Focus identity must be tied to the item's key, not the numeric index.
+    // If the consumer filters/reorders `items` (e.g. removing the focused item),
+    // the "same index" can now refer to a different item; we must treat that as a focus change.
+    const focusedKey = resolvedKeyExtractor(items[clampedIndex] as ItemT, clampedIndex);
 
     if (focusedKey === lastFocusedKeyRef.current) return;
 
@@ -306,6 +474,34 @@ export function SideIsland<ItemT>({
       }
     }
   };
+
+  // If the items list changes while expanded (common with filtering),
+  // ensure focus moves to the next valid item when the previously focused item disappears.
+  useEffect(() => {
+    if (!effectiveExpanded) return;
+
+    if (items.length === 0) {
+      lastFocusedKeyRef.current = null;
+      lastFocusedIndexRef.current = null;
+      setFocusedItemInfo(null);
+      return;
+    }
+
+    const currentKey = lastFocusedKeyRef.current;
+    if (currentKey) {
+      const idx = items.findIndex((it, i) => resolvedKeyExtractor(it, i) === currentKey);
+      if (idx >= 0) {
+        // Re-emit to ensure `focusedItemInfo.item` stays in sync with the latest item reference.
+        emitFocus(idx);
+        return;
+      }
+    }
+
+    // Previously focused item is gone: keep the same index if possible (the "next" item slides into it),
+    // otherwise clamp to the end.
+    const preferred = lastFocusedIndexRef.current ?? 0;
+    emitFocus(preferred);
+  }, [effectiveExpanded, items, resolvedKeyExtractor]);
 
   const recomputeFocus = () => {
     if (suppressFocusRef.current) return;
@@ -452,32 +648,80 @@ export function SideIsland<ItemT>({
               listRef.current = r;
             }}
             data={items as unknown as ItemT[]}
+            scrollEnabled={scrollEnabled}
             renderItem={({ item, index }: { item: ItemT; index: number }) => {
               const viewportHeight = Math.max(0, resolvedHeight - listViewportPaddingTop - listViewportPaddingBottom);
               const separatorHeight = listProps?.ItemSeparatorComponent ? 0 : 12;
-              return (
-                <ScaledItem
-                  index={index}
-                  scrollY={scrollYAnim}
-                  itemHeight={itemHeightAnim}
-                  viewportHeight={viewportHeight}
-                  separatorHeight={separatorHeight}
+              const itemKey = resolvedKeyExtractor(item, index);
+              
+              const innerMeasuredContent = (
+                <View
+                  onLayout={(e) => {
+                    const { height } = e.nativeEvent.layout;
+                    if (height > 0 && itemHeightAnim.value <= 0) {
+                      itemHeightAnim.value = height;
+                    }
+                    if (measuredItemHeight == null && height > 0) {
+                      setMeasuredItemHeight(height);
+                    }
+                  }}
                 >
-                  <View
-                    onLayout={(e) => {
-                      const { height } = e.nativeEvent.layout;
-                      if (height > 0 && itemHeightAnim.value <= 0) {
-                        itemHeightAnim.value = height;
-                      }
-                      if (measuredItemHeight == null && height > 0) {
-                        setMeasuredItemHeight(height);
-                      }
-                    }}
-                  >
-                    {renderItem({ item, index })}
-                  </View>
-                </ScaledItem>
+                  {renderItem({ item, index })}
+                </View>
               );
+
+              const itemContent = (
+                renderItemWrapper ? (
+                  renderItemWrapper({
+                    index,
+                    scrollY: scrollYAnim,
+                    itemHeight: itemHeightAnim,
+                    viewportHeight,
+                    separatorHeight,
+                    children: innerMeasuredContent,
+                  })
+                ) : (
+                  <ScaledItem
+                    index={index}
+                    scrollY={scrollYAnim}
+                    itemHeight={itemHeightAnim}
+                    viewportHeight={viewportHeight}
+                    separatorHeight={separatorHeight}
+                  >
+                    {innerMeasuredContent}
+                  </ScaledItem>
+                )
+              );
+              
+              if (enableDragAndDrop && dndContext) {
+                // Calculate island center-left position for snap-back animation
+                // Center-left means the left edge of the island at its vertical center
+                const islandCenterLeftX = resolvedPosition === "right" 
+                  ? screenWidth - resolvedWidth 
+                  : 0;
+                const islandCenterLeftY = topPosition + resolvedHeight / 2;
+                
+                return (
+                  <DraggableItem
+                    item={item}
+                    index={index}
+                    islandId={islandId}
+                    itemKey={itemKey}
+                    getDragPayload={getDragPayload}
+                    renderDragPreview={renderDragPreview}
+                    renderItem={renderItem}
+                    onDragStart={onDragStart}
+                    onDragEnd={onDragEnd}
+                    setScrollEnabled={setScrollEnabled}
+                    dndContext={dndContext}
+                    islandPosition={{ x: islandCenterLeftX, y: islandCenterLeftY }}
+                  >
+                    {itemContent}
+                  </DraggableItem>
+                );
+              }
+              
+              return itemContent;
             }}
             keyExtractor={resolvedKeyExtractor}
             showsVerticalScrollIndicator={listProps?.showsVerticalScrollIndicator ?? false}

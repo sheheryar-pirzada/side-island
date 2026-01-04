@@ -282,6 +282,7 @@ export default function TabOneScreen() {
           setAccentColor(hex);
         }}
       />
+
     </View>
   );
 }

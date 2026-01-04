@@ -1,5 +1,29 @@
 import type React from "react";
 import type { FlatListProps, ViewStyle } from "react-native";
+import type { SharedValue } from "react-native-reanimated";
+
+export type SideIslandItemScrollAnimationInfo = {
+  /**
+   * The item index in the FlatList.
+   */
+  index: number;
+  /**
+   * Scroll position (contentOffset.y) of the island list.
+   */
+  scrollY: SharedValue<number>;
+  /**
+   * Measured height of an item row (shared value, populated after first layout).
+   */
+  itemHeight: SharedValue<number>;
+  /**
+   * Visible list viewport height (island height minus internal padding).
+   */
+  viewportHeight: number;
+  /**
+   * Estimated separator height used for stride calculations.
+   */
+  separatorHeight: number;
+};
 
 export type TeamMember = {
   id: string;
@@ -76,6 +100,15 @@ export type SideIslandProps<ItemT> = {
   keyExtractor?: (item: ItemT, index: number) => string;
   listProps?: Omit<FlatListProps<ItemT>, "data" | "renderItem" | "keyExtractor">;
   /**
+   * Optional wrapper for each rendered list item. Use this to implement custom scroll-based
+   * animations (e.g. fade/scale/rotate) using Reanimated.
+   *
+   * If not provided, SideIsland uses its built-in "scale toward center" animation.
+   */
+  renderItemWrapper?: (
+    info: SideIslandItemScrollAnimationInfo & { children: React.ReactNode }
+  ) => React.ReactElement;
+  /**
    * Called whenever the "focused" item changes as the user scrolls.
    * Focus is determined by the item closest to the vertical center of the island.
    * On first open, the island scrolls to focus the first item (index 0) centered.
@@ -132,4 +165,46 @@ export type SideIslandProps<ItemT> = {
    * Default: 16
    */
   focusedItemDetailGap?: number;
+
+  /**
+   * Enable drag-and-drop functionality for island items.
+   * When enabled, items can be dragged and dropped into DroppableContainer components.
+   * Default: false
+   */
+  enableDragAndDrop?: boolean;
+
+  /**
+   * Unique identifier for this island when using drag-and-drop.
+   * Used to identify which island an item came from in drop callbacks.
+   * Default: "default"
+   */
+  islandId?: string;
+
+  /**
+   * Custom function to extract drag payload from an item.
+   * Defaults to returning { item, index }.
+   */
+  getDragPayload?: (info: { item: ItemT; index: number }) => unknown;
+
+  /**
+   * Custom render function for the drag preview that follows the finger.
+   * Defaults to rendering the item itself.
+   */
+  renderDragPreview?: (info: { item: ItemT; index: number }) => React.ReactElement | null;
+
+  /**
+   * Called when a drag operation starts.
+   */
+  onDragStart?: (info: { item: ItemT; index: number; islandId: string }) => void;
+
+  /**
+   * Called when a drag operation ends.
+   * dropResult is null if the item was not dropped in a valid drop zone.
+   */
+  onDragEnd?: (info: {
+    item: ItemT;
+    index: number;
+    islandId: string;
+    dropResult: null | { dropZoneId: string };
+  }) => void;
 };
