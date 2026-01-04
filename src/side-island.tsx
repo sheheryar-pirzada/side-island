@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { FlatList, PanResponder, StyleSheet, useColorScheme, useWindowDimensions, View } from "react-native";
 import Animated, { Easing, Extrapolation, interpolate, useAnimatedStyle, useSharedValue, withDelay, withTiming } from "react-native-reanimated";
+import type { SharedValue } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { Canvas, Group, Path as SkPathNode, Skia } from "@shopify/react-native-skia";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -83,8 +84,8 @@ function ScaledItem({
   children,
 }: {
   index: number;
-  scrollY: Animated.SharedValue<number>;
-  itemHeight: Animated.SharedValue<number>;
+  scrollY: SharedValue<number>;
+  itemHeight: SharedValue<number>;
   viewportHeight: number;
   separatorHeight: number;
   children: React.ReactNode;

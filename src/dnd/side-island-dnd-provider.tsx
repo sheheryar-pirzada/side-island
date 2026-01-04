@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useMemo, useRef, useState, useCallback } from "react";
 import { StyleSheet, View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming, Extrapolation, interpolate } from "react-native-reanimated";
+import type { SharedValue } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import type { SideIslandDndContextValue, DragPayload, DropZoneRegistry } from "./types";
 
@@ -167,7 +168,7 @@ export function SideIslandDndProvider({ children, renderDragPreview }: SideIslan
   const registerDropZone = (
     dropZoneId: string,
     config: {
-      bounds: Animated.SharedValue<{ x: number; y: number; width: number; height: number }>;
+      bounds: SharedValue<{ x: number; y: number; width: number; height: number }>;
       accepts?: (payload: DragPayload) => boolean;
       onDragEnter?: (payload: DragPayload) => void;
       onDragLeave?: (payload: DragPayload) => void;
